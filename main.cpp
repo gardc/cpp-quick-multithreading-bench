@@ -1,4 +1,5 @@
 #include <tbb/tbb.h>
+#include <tbb/concurrent_vector.h>
 #include <vector>
 #include <chrono>
 #include <iostream>
@@ -11,20 +12,27 @@ long long fibonacci(int n) {
 constexpr int X = 43;
 
 int main() {
-	std::vector<long long> v1, v2;
+	tbb::concurrent_vector<long long> v1;
+	std::vector<long long> v2;
+
+	v1.reserve(100);
+	v2.reserve(100);
+
 	tbb::task_group group1;
 
 	auto start_time = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < 100; i++) {
 		group1.run([i, &v1] {
-			v1.push_back(fibonacci(X));
+			auto result = fibonacci(X);
+			v1.push_back(result);
 		});
 	}
 	group1.wait();
 
 	auto end_time = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed_time = end_time - start_time;
-	std::cout << "Time taken in multithreaded system to calculate fib(" << X << "): " << elapsed_time << std::endl << "concurrent vector (first 3):" << std::endl;
+	std::cout << "Time taken in multithreaded system to calculate fib(" << X << "): " << elapsed_time.count() << " seconds" << std::endl;
+
 	for (int i = 0; i < 3; i++) {
 		std::cout << v1.at(i) << " | ";
 	}
